@@ -27,16 +27,20 @@ function isShorthand(l: string): boolean {
   return l === ".";
 }
 
-function isNotLetter(l: string): boolean {
-  return isBlank(l) || isQuote(l) || isShorthand(l);
+function isLine(l: string): boolean {
+  return l === "-" || l === "–" || l === "—";
 }
 
-const cedilaLookup = Object.freeze({
+function isNotLetter(l: string): boolean {
+  return isBlank(l) || isShorthand(l) || isQuote(l) || isLine(l);
+}
+
+const cedilaLookup = {
   "ţ": "ț",
   "Ţ": "Ț",
   "ş": "ș",
   "Ş": "Ș",
-});
+} as const;
 
 type Cedila = keyof (typeof cedilaLookup);
 
@@ -137,6 +141,24 @@ export function normalize(s: string): string {
         }
       }
 
+      let mid = nw;
+      let midTrim = nw;
+      if (mid.length > 2) {
+        mid = mid.slice(1, -1);
+      }
+      if (mid.length > 1) {
+        midTrim = mid.trim();
+      }
+
+      if (isLine(midTrim)) {
+        ret += w;
+        if (mid === midTrim) {
+          ret += "-";
+        } else {
+          ret += "—";
+        }
+      }
+
       const last = nw[nw.length - 1];
 
       if (isQuote(last)) {
@@ -145,8 +167,8 @@ export function normalize(s: string): string {
         if (!wasShorthand) {
           ret += `${w} `;
         }
-        ret += `${QUOTE_OPEN}${normalize(s.slice(begin, i))}${QUOTE_CLOSE}`;
-        i++;
+        ret += `${QUOTE_OPEN}${normalize(s.slice(begin, i))}${QUOTE_CLOSE} `;
+        skipWhile(isNotLetter);
       }
     }
   }
