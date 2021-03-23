@@ -4,5 +4,6 @@
   "deno.importMap": "./import_map.json",
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
-  }
+  },
+  "debug.javascript.unmapMissingSources": true
 }
