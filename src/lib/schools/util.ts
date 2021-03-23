@@ -1,13 +1,18 @@
 import { titleCase } from "lib";
 
-const letterRegex = /[a-zăâîșț]/i;
+const letterRegex = /[a-z0-9áéóőöăâîșț]/i;
 
 function isLetter(l: string): boolean {
   return letterRegex.test(l);
 }
 
 function isQuote(l: string): boolean {
-  return l === '"' || l === "'" || l === "’";
+  return l === '"' || l === "'" || l === "’" || l === "”" || l === "„" ||
+    l === "“" || l === "’";
+}
+
+function isComma(l: string): boolean {
+  return l === ",";
 }
 
 function isBlank(l: string): boolean {
@@ -31,8 +36,17 @@ function isLine(l: string): boolean {
   return l === "-" || l === "–" || l === "—";
 }
 
+function isUnderscore(l: string): boolean {
+  return l === "_";
+}
+
+function isParenthesis(l: string): boolean {
+  return l === "(" || l === ")";
+}
+
 function isNotLetter(l: string): boolean {
-  return isBlank(l) || isShorthand(l) || isQuote(l) || isLine(l);
+  return isBlank(l) || isShorthand(l) || isQuote(l) || isLine(l) ||
+    isComma(l) || isParenthesis(l);
 }
 
 const cedilaLookup = {
@@ -44,13 +58,15 @@ const cedilaLookup = {
 
 type Cedila = keyof (typeof cedilaLookup);
 
-function normalizeCedilas(s: string): string {
+function prenormalize(s: string): string {
   let i = 0;
 
   const skip = () => {
     const begin = i;
     // Satisfy Typescript, this will always be undefined
-    while (!cedilaLookup[s[i] as Cedila] && i < s.length) {
+    while (
+      !isUnderscore(s[i]) && !cedilaLookup[s[i] as Cedila] && i < s.length
+    ) {
       i++;
     }
     return s.slice(begin, i);
@@ -59,7 +75,11 @@ function normalizeCedilas(s: string): string {
   let ret = "";
   while (i < s.length) {
     ret += skip();
-    ret += cedilaLookup[s[i] as Cedila] || "";
+    if (isUnderscore(s[i])) {
+      ret += ". ";
+    } else {
+      ret += cedilaLookup[s[i] as Cedila] || "";
+    }
     i++;
   }
   return ret;
@@ -91,7 +111,7 @@ const QUOTE_CLOSE = "”";
  * @returns The normalized string.
  */
 export function normalize(s: string): string {
-  s = normalizeCedilas(s);
+  s = prenormalize(s);
 
   let i = 0;
 
@@ -139,6 +159,8 @@ export function normalize(s: string): string {
         } else {
           shouldPrependSpace = true;
         }
+      } else if (isComma(first)) {
+        ret += `${w}, `;
       }
 
       let mid = nw;
@@ -167,8 +189,16 @@ export function normalize(s: string): string {
         if (!wasShorthand) {
           ret += `${w} `;
         }
-        ret += `${QUOTE_OPEN}${normalize(s.slice(begin, i))}${QUOTE_CLOSE} `;
-        skipWhile(isNotLetter);
+        // TODO: remove recursion, as preprocess runs twice
+        ret += `${QUOTE_OPEN}${normalize(s.slice(begin, i))}${QUOTE_CLOSE}`;
+        i++;
+        skipWhile(isQuote);
+        const next = nextPred(isNotLetter);
+        if (isBlankString(next)) {
+          ret += " ";
+        } else {
+          ret += `${next.trim()} `;
+        }
       }
     }
   }

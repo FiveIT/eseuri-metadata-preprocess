@@ -1,4 +1,4 @@
-import { assertEquals, assertStrictEquals } from "testing";
+import { assertStrictEquals } from "testing";
 
 import { normalize } from "./util.ts";
 
@@ -27,8 +27,16 @@ Deno.test("school/util.normalize", () => {
     normalize('Colegiul Național "C. D. Loga" Timișoara'),
     "Colegiul Național „C.D. Loga” Timișoara",
   );
-  assertEquals(
+  assertStrictEquals(
     normalize('COLEGIUL AUTO "TRAIAN VUIA" TG-JIU'),
     "Colegiul Auto „Traian Vuia” Tg-Jiu",
+  );
+  assertStrictEquals(
+    normalize('COLEGIUL AGRICOL "DIMITRIE CANTEMIR", MUN. HUŞI'),
+    "Colegiul Agricol „Dimitrie Cantemir”, Mun. Huși",
+  );
+  assertStrictEquals(
+    normalize("LICEUL TEORETIC WALDORF, IAŞI"),
+    "Liceul Teoretic Waldorf, Iași",
   );
 });
