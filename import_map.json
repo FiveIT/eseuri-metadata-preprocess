@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "lib": "./src/lib/mod.ts",
+    "deps": "./src/deps.ts"
+  }
+}
