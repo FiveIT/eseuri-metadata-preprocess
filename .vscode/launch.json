@@ -6,13 +6,7 @@
       "request": "launch",
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "deno",
-      "runtimeArgs": [
-        "test",
-        "--import-map=import_map.json",
-        "--inspect=127.0.0.1:9229",
-        "--allow-all",
-        "src"
-      ],
+      "runtimeArgs": ["test", "--unstable", "--import-map=import_map.json", "--inspect=127.0.0.1:9229", "--allow-all", "src"],
       "attachSimplePort": 9229
     }
   ]
