@@ -1,6 +1,7 @@
 {
   "imports": {
     "lib": "./src/lib/mod.ts",
-    "deps": "./src/deps.ts"
+    "deps": "./src/deps.ts",
+    "testing": "https://deno.land/std@0.91.0/testing/asserts.ts"
   }
 }
