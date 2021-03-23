@@ -43,14 +43,13 @@ try {
   log.essential(blue("Fetching counties..."));
   const counties = await fetchCounties();
   const countiesData = sqlutil.fromStringRecord(counties);
-  const countiesInverted = invertDictionary(counties);
   log.essential(green("Counties fetched successfully!"));
 
   log.essential(blue("Fetching schools..."));
   input = await Deno.open(INPUT_FILE, {
     read: true,
   });
-  const schools = fetchSchools(input, countiesInverted);
+  const schools = fetchSchools(input, invertDictionary(counties));
   log.essential(green("Schools fetched successfully!"));
 
   log.essential(blue("Creating output dir..."));
@@ -58,7 +57,7 @@ try {
   output = await Deno.create(OUTPUT_FILE);
   log.essential(green("Output dir created successfully!"));
 
-  log.essential(blue("Wwriting SQL statements..."));
+  log.essential(blue("Writing SQL statements..."));
   await sql("counties", countiesData, output);
   await sql("schools", schools as AsyncIterable<sqlutil.Input>, output);
   log.essential(green("SQL statements written successfully!"));
