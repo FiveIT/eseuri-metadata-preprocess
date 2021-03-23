@@ -1,8 +1,6 @@
 import { normalize } from "./util.ts";
 import { log } from "lib";
-import { path, readCSVObjects } from "deps";
-
-const INPUT_FILE = path.join("data", "schools.csv");
+import { readCSVObjects } from "deps";
 
 interface School {
   "name": string;
@@ -11,42 +9,44 @@ interface School {
 }
 
 /**
- * Returns all the schools in Romania, by fetching the file at data/schools.csv.
+ * Returns all the schools in the given reader. It parses CSV.
  * 
+ * @param reader The reader to read from.
  * @param counties A lookup table to replace counties with their county ID.
  * @returns The fetched schools.
  */
 export default async function* (
+  reader: Deno.Reader,
   counties?: Record<string, string>,
 ): AsyncGenerator<School> {
-  const file = await Deno.open(INPUT_FILE, {
-    read: true,
-  });
-  const csv = readCSVObjects(file, {
+  const csv = readCSVObjects(reader, {
     lineSeparator: "\r\n",
     columnSeparator: ";",
     quote: `"`,
   });
 
   for await (const school of csv) {
-    log.verbose(school);
+    log.verbose("Before:", school);
 
-    const name = normalize(school["name"]);
-    let shortName: string | undefined = normalize(school["short_name"]);
-    if (name === shortName) {
-      shortName = undefined;
+    const obj: Partial<School> = {};
+
+    const nameInput = school["name"];
+    obj.name = normalize(nameInput);
+
+    const shortNameInput = school["short_name"];
+    if (nameInput !== shortNameInput) {
+      obj.short_name = normalize(shortNameInput);
     }
-    const inputCounty = normalize(school["county_id"]);
-    const countyID = counties?.[inputCounty] || inputCounty;
 
-    log.verbose({ name, shortName, countyID });
+    let countyInput = normalize(school["county_id"]);
+    if (countyInput.includes("București")) {
+      countyInput = "București";
+    }
+    obj.county_id = counties?.[countyInput] || countyInput;
 
-    yield {
-      name,
-      short_name: shortName,
-      county_id: countyID,
-    };
+    log.verbose("After:", obj);
+    log.verbose();
+
+    yield obj as School;
   }
-
-  Deno.close(file.rid);
 }
