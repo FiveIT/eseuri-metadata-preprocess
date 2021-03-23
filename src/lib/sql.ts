@@ -9,12 +9,12 @@ export type Input = Record<string, string>;
  */
 export default async function (
   table: string,
-  input: Input[],
+  input: Iterable<Input> | AsyncIterable<Input>,
   writer: Deno.Writer,
 ): Promise<void> {
   const encoder = new TextEncoder();
 
-  for (const row of input) {
+  for await (const row of input) {
     const headers = Object.keys(row), columns = Object.values(row);
     const keys = headers.map((header) => `"${header}"`).join(", ");
     const values = columns.map((column) => `'${column}'`).join(", ");
