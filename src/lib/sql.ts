@@ -32,8 +32,15 @@ export default async function (
  * @param dict The dictionary to transform.
  * @returns The rows.
  */
-export function fromDictionary(dict: Record<string | number, Input>): Input[] {
-  return Object.entries(dict).map(([id, row]) => ({ id, ...row }));
+export function* fromDictionary(
+  dict: Record<string | number, Input>,
+): Generator<Input> {
+  for (const [id, row] of Object.entries(dict)) {
+    yield {
+      id,
+      ...row,
+    };
+  }
 }
 
 /**
@@ -43,8 +50,13 @@ export function fromDictionary(dict: Record<string | number, Input>): Input[] {
  * @param record The record to transform.
  * @returns The rows.
  */
-export function fromStringRecord(
+export function* fromStringRecord(
   record: Record<string | number, string>,
-): Input[] {
-  return Object.entries(record).map(([id, name]) => ({ id, name }));
+): Generator<Input> {
+  for (const [id, name] of Object.entries(record)) {
+    yield {
+      id,
+      name,
+    };
+  }
 }
