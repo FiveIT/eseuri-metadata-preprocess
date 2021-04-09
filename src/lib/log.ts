@@ -4,6 +4,7 @@ enum Level {
 }
 
 let verboseLogging = false;
+let lastTimestamp: number | undefined;
 
 /**
  * Sets the logging verbosity: true to log
@@ -11,13 +12,20 @@ let verboseLogging = false;
  * 
  * @param value The flag's value.
  */
-export function isVerbose(value: boolean) {
+export function setVerbose(value: boolean) {
   verboseLogging = value;
 }
 
 function log(level: Level, ...data: unknown[]): void {
   if (!verboseLogging && level === Level.VERBOSE) {
     return;
+  }
+  if (level !== Level.VERBOSE) {
+    const now = performance.now();
+    if (lastTimestamp) {
+      data.push(`+${now - lastTimestamp}ms`);
+    }
+    lastTimestamp = now;
   }
   console.error(...data);
 }
