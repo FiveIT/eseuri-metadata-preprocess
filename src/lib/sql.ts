@@ -1,4 +1,4 @@
-export type Input = Record<string, string>;
+export type Input = Record<string, string | number>;
 
 /**
  * Writes INSERT statements to the specified writer.
@@ -15,9 +15,13 @@ export default async function (
   const encoder = new TextEncoder();
 
   for await (const row of input) {
-    const headers = Object.keys(row), columns = Object.values(row);
-    const keys = headers.map((header) => `"${header}"`).join(", ");
-    const values = columns.map((column) => `'${column}'`).join(", ");
+    const columns = Object.entries(row).filter(([, value]) =>
+      value === 0 || value
+    );
+    const keys = columns.map(([header]) => `"${header}"`).join(", ");
+    const values = columns.map(([, column]) =>
+      typeof column === "number" ? column : `'${column}'`
+    ).join(", ");
     const query = encoder.encode(
       `INSERT INTO "${table}" (${keys}) VALUES (${values});\n`,
     );

@@ -1,5 +1,5 @@
 import_map=--import-map=import_map.json
-file_perms=--allow-read=output,data --allow-write=output
+file_perms=--allow-read=tmp,output,data --allow-write=tmp,output
 
 output/metadata.sql:
 	deno run --unstable $(import_map) --allow-net=gist.githubusercontent.com $(file_perms) src/main.ts ${VERBOSE}
