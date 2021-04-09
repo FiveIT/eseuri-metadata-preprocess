@@ -1,5 +1,6 @@
 import {
   fetchCounties,
+  fetchMeta,
   fetchSchools,
   invertDictionary,
   log,
@@ -7,7 +8,13 @@ import {
   sql,
   sqlutil,
 } from "lib";
-import { blue, fs, green, path } from "deps";
+import { blue, bold, fs, green, path, red } from "deps";
+
+const inspect = (fn: (value: unknown) => void) =>
+  <T>(value: T): T => {
+    fn(value);
+    return value;
+  };
 
 await requestPermissions(
   {
@@ -26,52 +33,97 @@ await requestPermissions(
     name: "write",
     path: "output",
   },
+  {
+    name: "read",
+    path: "tmp",
+  },
+  {
+    name: "write",
+    path: "tmp",
+  },
 );
 
-const INPUT_FILE = path.join("data", "schools.csv");
+const METADATA_FILENAMES = "schools,authors,titles,characters".split(",");
+const TMP_DIR = "tmp";
 const OUTPUT_DIR = "output";
-const OUTPUT_FILE = path.join(OUTPUT_DIR, "metadata.sql");
+const OUTPUT_FILENAME = path.join(OUTPUT_DIR, "metadata.sql");
 
-if (Deno.args.length > 0) {
-  log.isVerbose(true);
-}
-
-let input: Deno.File | undefined;
+let metadata: Deno.File[] | undefined;
+let schools: Deno.File | undefined;
+let tempOutput: Deno.File[] | undefined;
 let output: Deno.File | undefined;
 
 try {
+  log.essential(blue("Opening and creating required files..."));
+  [[schools, ...metadata], tempOutput, output] = await Promise.all([
+    Promise.all(
+      METADATA_FILENAMES
+        .map((name) => path.join("data", `${name}.csv`))
+        .map((file) => Deno.open(file, { read: true })),
+    ).then(
+      inspect(() =>
+        log.essential(green("Opened metadata dataset input files!"))
+      ),
+    ),
+    fs.ensureDir(TMP_DIR).then(() =>
+      Promise.all(
+        METADATA_FILENAMES.map((name) => Deno.create(path.join(TMP_DIR, name))),
+      )
+    ).then(
+      inspect(() => log.essential(green("Created temporary output files!"))),
+    ),
+    fs.ensureFile(OUTPUT_FILENAME).then(() =>
+      Deno.open(OUTPUT_FILENAME, { write: true })
+    ).then(inspect(() => log.essential(green("Created output file!")))),
+  ]);
+
   log.essential(blue("Fetching counties..."));
   const counties = await fetchCounties();
   const countiesData = sqlutil.fromStringRecord(counties);
   log.essential(green("Counties fetched successfully!"));
 
-  log.essential(blue("Fetching schools..."));
-  input = await Deno.open(INPUT_FILE, {
-    read: true,
-  });
-  const schools = fetchSchools(input, invertDictionary(counties));
-  log.essential(green("Schools fetched successfully!"));
+  log.essential(blue("Writing SQL statements to temporary files..."));
+  await Promise.all([
+    sql("counties", countiesData, output),
+    ...metadata.map((input, i) =>
+      sql(METADATA_FILENAMES[i + 1], fetchMeta(input), tempOutput![i + 1])
+    ),
+    sql(
+      METADATA_FILENAMES[0],
+      fetchSchools(schools, invertDictionary(counties)) as AsyncIterable<
+        sqlutil.Input
+      >,
+      tempOutput[0],
+    ),
+  ]);
+  log.essential(green("SQL statements written to temp successfully!"));
 
-  log.essential(blue("Creating output dir..."));
-  await fs.ensureDir(OUTPUT_DIR);
-  output = await Deno.create(OUTPUT_FILE);
-  log.essential(green("Output dir created successfully!"));
-
-  log.essential(blue("Writing SQL statements..."));
-  await sql("counties", countiesData, output);
-  await sql("schools", schools as AsyncIterable<sqlutil.Input>, output);
-  log.essential(green("SQL statements written successfully!"));
+  log.essential(blue("Writing SQL statements to final output file..."));
+  await Promise.all(
+    tempOutput.map(({ rid }) => Deno.seek(rid, 0, Deno.SeekMode.Start)),
+  );
+  for (const temp of tempOutput) {
+    await Deno.copy(temp, output);
+  }
+  log.essential(bold(green("Finished!")));
 } catch (err) {
-  console.error(err);
+  log.essential(bold(red("An error occurred:")));
+  log.essential(red(err));
 
   if (output) {
-    await Deno.remove(OUTPUT_DIR, {
-      recursive: true,
-    });
+    Deno.close(output.rid);
+    await Deno.remove(OUTPUT_DIR, { recursive: true });
   }
 } finally {
-  if (input) {
-    Deno.close(input.rid);
+  if (metadata) {
+    metadata.forEach(({ rid }) => Deno.close(rid));
+  }
+  if (schools) {
+    Deno.close(schools.rid);
+  }
+  if (tempOutput) {
+    tempOutput.forEach(({ rid }) => Deno.close(rid));
+    await Deno.remove(TMP_DIR, { recursive: true });
   }
   if (output) {
     Deno.close(output.rid);
