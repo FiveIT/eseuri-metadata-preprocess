@@ -16,6 +16,10 @@ const inspect = (fn: (value: unknown) => void) =>
     return value;
   };
 
+if (Deno.args.length > 0) {
+  log.setVerbose(true);
+}
+
 await requestPermissions(
   {
     name: "net",
