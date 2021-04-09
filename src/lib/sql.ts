@@ -15,9 +15,11 @@ export default async function (
   const encoder = new TextEncoder();
 
   for await (const row of input) {
-    const headers = Object.keys(row), columns = Object.values(row);
-    const keys = headers.map((header) => `"${header}"`).join(", ");
-    const values = columns.map((column) =>
+    const columns = Object.entries(row).filter(([, value]) =>
+      value === 0 || value
+    );
+    const keys = columns.map(([header]) => `"${header}"`).join(", ");
+    const values = columns.map(([, column]) =>
       typeof column === "number" ? column : `'${column}'`
     ).join(", ");
     const query = encoder.encode(
