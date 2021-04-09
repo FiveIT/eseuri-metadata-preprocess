@@ -105,7 +105,7 @@ const QUOTE_CLOSE = "”";
  * @example
  * const input = "COLEGIUL   'Aurel Vijoi' Făgăraș";
  * const normalized = normalize(input);
- * assertEquals(normalized, 'Colegiul "Aurel Vijoi" Făgăraș');
+ * assertEquals(normalized, 'Colegiul „Aurel Vijoi” Făgăraș');
  * 
  * @param s The string to normalize.
  * @returns The normalized string.
