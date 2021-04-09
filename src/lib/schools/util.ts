@@ -63,9 +63,8 @@ function prenormalize(s: string): string {
 
   const skip = () => {
     const begin = i;
-    // Satisfy Typescript, this will always be undefined
     while (
-      !isUnderscore(s[i]) && !cedilaLookup[s[i] as Cedila] && i < s.length
+      !isUnderscore(s[i]) && !(s[i] in cedilaLookup) && i < s.length
     ) {
       i++;
     }
@@ -73,16 +72,19 @@ function prenormalize(s: string): string {
   };
 
   let ret = "";
-  while (i < s.length) {
+  while (true) {
     ret += skip();
-    if (isUnderscore(s[i])) {
+    if (i === s.length) {
+      return ret;
+    } else if (isUnderscore(s[i])) {
       ret += ". ";
     } else {
-      ret += cedilaLookup[s[i] as Cedila] || "";
+      // skip stops on either underscore or cedila character,
+      // so here s[i] is surely Cedila.
+      ret += cedilaLookup[s[i] as Cedila];
     }
     i++;
   }
-  return ret;
 }
 
 const excludeFromTitle = /^(a|ale|de|și)$/i;
