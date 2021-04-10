@@ -42,6 +42,9 @@ export default async function* (
     if (countyInput.includes("București")) {
       countyInput = "București";
     }
+    if (counties && !(countyInput in counties)) {
+      throw new Error(`County "${countyInput}" not in counties dictionary!`);
+    }
     obj.county_id = counties?.[countyInput] || countyInput;
 
     log.verbose("After:", obj);
