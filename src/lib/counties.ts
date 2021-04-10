@@ -2,7 +2,7 @@ import { log } from "lib";
 import { readCSVObjects, readerFromStreamReader } from "deps";
 
 const COUNTIES_URL =
-  "https://gist.githubusercontent.com/mgax/7468143/raw/f04289cdd0219b28447fd84f610cc383a756f060/coduri-judete.csv";
+  "https://gist.githubusercontent.com/tmaxmax/167f784be942789804d58f804fa3c8a0/raw/00de7589d8f7f3409b654412ebbd08f553a73869/coduri-judete.csv";
 
 export type Counties = Record<string, string>;
 
